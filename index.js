@@ -4,6 +4,7 @@ const port = 5000;
 const mongoose = require("mongoose");
 const config = require("./config/key.js");
 const { User } = require("./models/User.js");
+const { auth } = require("./middleware/auth.js");
 
 // bodyParser는 express 4.x 버전 이후라면, express의 내장 미들웨어를 사용하여 본문을 파싱할 수 있고, 더 나은 성능을 얻을 수 있다.
 // const bodyParser = require("body-parser");
@@ -39,8 +40,10 @@ app.get('/', (req, res) => {
 //     })
 // })
 
+// Router 사용을 고려하여, api/users/... 등으로 작성
+
 // 회원가입 (신버전 mongoose 에서는 save() 메서드에서 Promises를 사용하도록 함)
-app.post("/register", async (req, res) => {
+app.post("/api/users/register", async (req, res) => {
     try {
         // 회원가입 필요 정보들을 client에서 가져오면,
         // 그것들을 데이터베이스에 넣어준다.
@@ -93,7 +96,7 @@ app.post("/register", async (req, res) => {
 // })
 
 // 2. 최근버전 로그인 기능구현
-app.post("/login", async (req, res) => {
+app.post("/api/users/login", async (req, res) => {
     try {
         // 1. 요청된 이메일을 데이터베이스에서 찾기
         const user = await User.findOne({ email: req.body.email });
@@ -123,6 +126,30 @@ app.post("/login", async (req, res) => {
         return res.status(400).send(error.message || "로그인에 실패했습니다.");
     }
 });
+
+// Auth 기능 구현하기
+app.get("/api/users/auth", auth, async (req, res) => {
+    // 여기까지 미들웨어를 통과해 왔다는 이야기는
+    // Authentication이 True 이다.
+
+
+    try {
+        res.status(200).json({
+            _id: req.user._id,
+            isAdmin: req.user.role === 0 ? false : true,
+            isAuth: true,
+            email: req.user.email,
+            name: req.user.name,
+            lastname: req.user.lastname,
+            role: req.user.role,
+            image: req.user.image
+        });
+
+    } catch (error) {
+
+    }
+});
+
 
 
 app.listen(port, () => {
